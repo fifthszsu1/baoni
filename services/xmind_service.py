@@ -18,13 +18,13 @@ class XMindService:
     
     def parse_markdown_to_structure(self, markdown_text: str) -> Dict[str, Any]:
         """
-        解析markdown文本为层次结构
+        解析markdown文本为思维导图结构
         
         Args:
             markdown_text (str): markdown格式的分析结果
             
         Returns:
-            Dict: 解析后的结构化数据
+            Dict: 解析后的思维导图结构化数据
         """
         lines = markdown_text.split('\n')
         structure = {
@@ -47,6 +47,8 @@ class XMindService:
             # 二级标题 (## 1. 主题概要)
             elif line.startswith('## '):
                 section_title = line[3:].strip()
+                # 清理标题中的序号
+                section_title = re.sub(r'^\d+\.\s*', '', section_title)
                 current_section = {
                     'title': section_title,
                     'children': []
@@ -64,30 +66,67 @@ class XMindService:
                     }
                     current_section['children'].append(current_subsection)
                     
-            # 列表项 (- 内容)
+            # 列表项 (- 内容 或 * 内容)
             elif line.startswith('- ') or line.startswith('* '):
                 content = line[2:].strip()
                 if content:
-                    item = {'title': content, 'children': []}
-                    if current_subsection:
-                        current_subsection['children'].append(item)
-                    elif current_section:
-                        current_section['children'].append(item)
+                    # 处理粗体文本
+                    content = re.sub(r'\*\*(.*?)\*\*', r'\1', content)
+                    # 分割长文本
+                    if len(content) > 80:
+                        # 如果内容太长，尝试分割
+                        parts = content.split(';')
+                        if len(parts) > 1:
+                            for part in parts:
+                                part = part.strip()
+                                if part:
+                                    item = {'title': part, 'children': []}
+                                    if current_subsection:
+                                        current_subsection['children'].append(item)
+                                    elif current_section:
+                                        current_section['children'].append(item)
+                        else:
+                            # 按句号分割
+                            sentences = content.split('.')
+                            if len(sentences) > 1:
+                                for sentence in sentences:
+                                    sentence = sentence.strip()
+                                    if sentence and len(sentence) > 10:
+                                        item = {'title': sentence, 'children': []}
+                                        if current_subsection:
+                                            current_subsection['children'].append(item)
+                                        elif current_section:
+                                            current_section['children'].append(item)
+                            else:
+                                item = {'title': content, 'children': []}
+                                if current_subsection:
+                                    current_subsection['children'].append(item)
+                                elif current_section:
+                                    current_section['children'].append(item)
+                    else:
+                        item = {'title': content, 'children': []}
+                        if current_subsection:
+                            current_subsection['children'].append(item)
+                        elif current_section:
+                            current_section['children'].append(item)
                         
             # 数字列表 (1. 内容)
             elif re.match(r'^\d+\.\s', line):
                 content = re.sub(r'^\d+\.\s', '', line).strip()
                 if content:
+                    # 处理粗体文本
+                    content = re.sub(r'\*\*(.*?)\*\*', r'\1', content)
                     item = {'title': content, 'children': []}
                     if current_subsection:
                         current_subsection['children'].append(item)
                     elif current_section:
                         current_section['children'].append(item)
                         
-            # 普通段落文本
-            elif line and not line.startswith('#'):
-                if current_section and line not in ['```', '---']:
-                    # 如果是普通文本，添加到当前节点
+            # 普通段落文本（跳过太长的文本）
+            elif line and not line.startswith('#') and not line.startswith('---'):
+                if current_section and len(line) < 150:
+                    # 清理文本
+                    line = re.sub(r'\*\*(.*?)\*\*', r'\1', line)
                     item = {'title': line, 'children': []}
                     if current_subsection:
                         current_subsection['children'].append(item)

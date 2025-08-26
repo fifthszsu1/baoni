@@ -10,6 +10,10 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-here'
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     
+    # 登录配置
+    LOGIN_USERNAME = os.environ.get('LOGIN_USERNAME', 'baoni')
+    LOGIN_PASSWORD = os.environ.get('LOGIN_PASSWORD', 'lulu220519')
+    
     # 文件上传配置
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'uploads')
     MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))  # 16MB

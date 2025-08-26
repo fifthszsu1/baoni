@@ -1,0 +1,25 @@
+# Flask应用配置
+FLASK_ENV=development
+FLASK_DEBUG=True
+SECRET_KEY=your-secret-key-here-change-in-production
+
+# 文件上传配置
+UPLOAD_FOLDER=uploads
+MAX_CONTENT_LENGTH=16777216
+
+# Azure OpenAI配置
+AZURE_OPENAI_API_KEY=your-azure-openai-api-key
+AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com/
+AZURE_DEPLOYMENT_NAME=gpt-4
+AZURE_API_VERSION=2025-01-01-preview
+
+# 用户登录配置
+LOGIN_USERNAME=baoni
+LOGIN_PASSWORD=lulu220519
+
+# 应用端口配置
+BACKEND_PORT=5001
+FRONTEND_PORT=8081
+
+# Docker镜像配置（中国大陆用户建议设为true）
+USE_CHINA_MIRROR=true 

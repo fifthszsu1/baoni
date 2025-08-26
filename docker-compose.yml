@@ -1,0 +1,55 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        USE_CHINA_MIRROR: ${USE_CHINA_MIRROR:-true}
+    container_name: baoni-backend
+    ports:
+      - "5001:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=False
+    env_file:
+      - .env
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - baoni-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        USE_CHINA_MIRROR: ${USE_CHINA_MIRROR:-true}
+    container_name: baoni-frontend
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+    networks:
+      - baoni-network
+    restart: unless-stopped
+    environment:
+      - VUE_APP_API_BASE_URL=http://localhost:5001
+
+networks:
+  baoni-network:
+    driver: bridge
+
+volumes:
+  uploads-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./uploads 

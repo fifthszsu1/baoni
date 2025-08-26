@@ -35,15 +35,25 @@ def create_app():
     api = Api(
         app, 
         version='1.0', 
-        title='英文文本分析与XMind生成API',
-        description='使用Azure OpenAI分析英文文本并生成XMind思维导图的RESTful API',
+        title='英文文本分析与思维导图生成API',
+        description='使用Azure OpenAI分析英文文本并生成思维导图数据的RESTful API，支持JWT认证',
         doc='/swagger/',
-        prefix='/api'
+        prefix='/api',
+        security='Bearer Auth',
+        authorizations={
+            'Bearer Auth': {
+                'type': 'apiKey',
+                'in': 'header',
+                'name': 'Authorization',
+                'description': "在请求头中添加 'Bearer ' + JWT token"
+            }
+        }
     )
     
     # 注册命名空间
-    from routes.api_routes import text_analysis_ns
+    from routes.api_routes import text_analysis_ns, auth_ns
     api.add_namespace(text_analysis_ns, path='/analyze')
+    api.add_namespace(auth_ns, path='/auth')
     
     # 静态文件路由
     @app.route('/downloads/<filename>')
