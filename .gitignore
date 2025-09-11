@@ -6,7 +6,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+# dist/ - 注释掉，因为前端需要dist目录
 downloads/
 eggs/
 .eggs/
@@ -78,7 +78,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Frontend build
-# /frontend/dist/
+# 不忽略 frontend/dist/ 因为Docker部署需要
 /frontend/node_modules/
 
 # Docker
