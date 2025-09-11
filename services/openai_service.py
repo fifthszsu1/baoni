@@ -32,34 +32,46 @@ class OpenAIService:
             # 构建专门用于阅读理解分析的提示词
             system_prompt = """You are a professional English reading comprehension analyst. Please analyze the provided English article and extract its main ideas and structure to help high school students better understand the text.
 
-Please output the analysis results in the following format (using markdown format):
+IMPORTANT: Please output the analysis results in the EXACT format below (using markdown format). Each section must contain both English and Chinese content:
 
 # Article Analysis
 
-## 1. Main Theme
-- Briefly summarize the core theme of the article
+## Main Theme
+- [English description of the core theme]
+- [Chinese description of the core theme - 中文描述核心主题]
 
-## 2. Article Structure
-- Analyze the logical structure of the article (e.g., introduction-body-conclusion)
-- Identify the role and relationship of each paragraph
+## Article Structure  
+- [English analysis of logical structure, e.g., introduction-body-conclusion]
+- [Chinese analysis - 中文分析文章逻辑结构]
+- [English description of each paragraph's role and relationship]
+- [Chinese description - 中文描述各段落作用和关系]
 
-## 3. Key Arguments
-- Extract the main viewpoints from the article
-- List supporting evidence
+## Key Arguments
+- [English extraction of main viewpoints]
+- [Chinese extraction - 中文提取主要观点] 
+- [English list of supporting evidence]
+- [Chinese list - 中文列出支持证据]
 
-## 4. Important Details
-- Key facts and data
-- Important examples and explanations
+## Important Details
+- [English key facts and data]
+- [Chinese key facts - 中文重要事实和数据]
+- [English important examples and explanations]
+- [Chinese examples - 中文重要例子和解释]
 
-## 5. Language Features
-- The writing style of the article
-- Important rhetorical devices
+## Language Features
+- [English description of writing style]
+- [Chinese description - 中文描述写作风格]
+- [English description of important rhetorical devices]
+- [Chinese description - 中文描述重要修辞手法]
 
-## 6. Reading Comprehension Points
-- Potential exam focus points
-- Understanding difficulty hints
+## Reading Comprehension Points
+- [English potential exam focus points]
+- [Chinese focus points - 中文潜在考试重点]
+- [English understanding difficulty hints]
+- [Chinese hints - 中文理解难度提示]
 
-Please ensure the analysis content is well-organized and suitable for high school students' comprehension level. Output everything in English only."""
+Please ensure each section has 2-4 bullet points, with each point containing both English and Chinese content. Keep the analysis well-organized and suitable for high school students' comprehension level.
+"""
 
             user_prompt = f"Please analyze the following English article:\n\n{text}"
             

@@ -67,20 +67,24 @@
             
             <!-- 标签页 -->
             <el-tabs v-model="activeTab" type="card">
-              <el-tab-pane label="专业思维导图" name="d3mindmap">
+              <!-- 隐藏专业思维导图tab - 代码保留备用 -->
+              <!-- <el-tab-pane label="专业思维导图" name="d3mindmap">
                 <D3Mindmap 
                   v-if="analysisResult.mindmap_data" 
                   :data="analysisResult.mindmap_data"
                 />
                 <el-empty v-else description="暂无思维导图数据" />
-              </el-tab-pane>
-              <el-tab-pane label="XMind思维导图" name="xmind">
+              </el-tab-pane> -->
+              
+              <!-- 隐藏XMind思维导图tab - 代码保留备用 -->
+              <!-- <el-tab-pane label="XMind思维导图" name="xmind">
                 <XMindViewer 
                   v-if="analysisResult.mindmap_data" 
                   :data="analysisResult.mindmap_data"
                 />
                 <el-empty v-else description="暂无思维导图数据" />
-              </el-tab-pane>
+              </el-tab-pane> -->
+              
               <el-tab-pane label="层级视图" name="mindmap">
                 <MindmapViewer 
                   v-if="analysisResult.mindmap_data" 
@@ -140,7 +144,7 @@ const authStore = useAuthStore()
 const inputText = ref('')
 const isAnalyzing = ref(false)
 const analysisResult = ref(null)
-const activeTab = ref('d3mindmap')
+const activeTab = ref('mindmap') // 默认显示层级视图
 
 const analyzeText = async () => {
   if (inputText.value.length < 50) {

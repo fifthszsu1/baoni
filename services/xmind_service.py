@@ -18,122 +18,145 @@ class XMindService:
     
     def parse_markdown_to_structure(self, markdown_text: str) -> Dict[str, Any]:
         """
-        解析markdown文本为思维导图结构
+        解析markdown文本为固定的3层思维导图结构
+        根节点: Article Analysis
+        一级节点: Main Theme, Article Structure, Key Arguments, Important Details, Language Features, Reading Comprehension Points
+        二级节点: 每个一级节点下的具体内容点
         
         Args:
             markdown_text (str): markdown格式的分析结果
             
         Returns:
-            Dict: 解析后的思维导图结构化数据
+            Dict: 解析后的思维导图结构化数据（固定3层）
         """
         lines = markdown_text.split('\n')
+        
+        # 固定的3层结构
         structure = {
             'title': 'Article Analysis',
-            'children': []
+            'children': [
+                {'title': 'Main Theme', 'children': []},
+                {'title': 'Article Structure', 'children': []},
+                {'title': 'Key Arguments', 'children': []},
+                {'title': 'Important Details', 'children': []},
+                {'title': 'Language Features', 'children': []},
+                {'title': 'Reading Comprehension Points', 'children': []}
+            ]
         }
         
+        # 创建一级节点的映射，便于快速查找
+        section_map = {}
+        for section in structure['children']:
+            section_map[section['title']] = section
+        
         current_section = None
-        current_subsection = None
         
         for line in lines:
             line = line.strip()
             if not line:
                 continue
                 
-            # 一级标题 (# Article Analysis)
+            # 一级标题 (# Article Analysis) - 忽略，使用固定标题
             if line.startswith('# '):
-                structure['title'] = line[2:].strip()
+                continue
                 
-            # 二级标题 (## 1. 主题概要)
+            # 二级标题 (## Main Theme, ## Article Structure, etc.)
             elif line.startswith('## '):
                 section_title = line[3:].strip()
                 # 清理标题中的序号
                 section_title = re.sub(r'^\d+\.\s*', '', section_title)
-                current_section = {
-                    'title': section_title,
-                    'children': []
-                }
-                structure['children'].append(current_section)
-                current_subsection = None
                 
-            # 三级标题 (### 子标题)
+                # 查找匹配的固定节点
+                current_section = None
+                for fixed_title, section in section_map.items():
+                    if fixed_title.lower() in section_title.lower() or section_title.lower() in fixed_title.lower():
+                        current_section = section
+                        break
+                        
+                # 如果没找到匹配的，根据关键词判断
+                if not current_section:
+                    title_lower = section_title.lower()
+                    if 'theme' in title_lower or '主题' in title_lower:
+                        current_section = section_map['Main Theme']
+                    elif 'structure' in title_lower or '结构' in title_lower:
+                        current_section = section_map['Article Structure']
+                    elif 'argument' in title_lower or '观点' in title_lower or '论点' in title_lower:
+                        current_section = section_map['Key Arguments']
+                    elif 'detail' in title_lower or '细节' in title_lower or '事实' in title_lower:
+                        current_section = section_map['Important Details']
+                    elif 'language' in title_lower or 'feature' in title_lower or '语言' in title_lower or '特征' in title_lower:
+                        current_section = section_map['Language Features']
+                    elif 'comprehension' in title_lower or 'reading' in title_lower or '理解' in title_lower or '阅读' in title_lower:
+                        current_section = section_map['Reading Comprehension Points']
+                
+            # 三级标题 (### 子标题) - 在固定3层结构中忽略
             elif line.startswith('### '):
-                if current_section:
-                    subsection_title = line[4:].strip()
-                    current_subsection = {
-                        'title': subsection_title,
-                        'children': []
-                    }
-                    current_section['children'].append(current_subsection)
+                continue
                     
-            # 列表项 (- 内容 或 * 内容)
-            elif line.startswith('- ') or line.startswith('* '):
+            # 列表项 (- 内容 或 * 内容) - 作为二级节点
+            elif (line.startswith('- ') or line.startswith('* ')) and current_section:
                 content = line[2:].strip()
                 if content:
-                    # 处理粗体文本
-                    content = re.sub(r'\*\*(.*?)\*\*', r'\1', content)
-                    # 分割长文本
-                    if len(content) > 80:
-                        # 如果内容太长，尝试分割
-                        parts = content.split(';')
-                        if len(parts) > 1:
-                            for part in parts:
-                                part = part.strip()
-                                if part:
-                                    item = {'title': part, 'children': []}
-                                    if current_subsection:
-                                        current_subsection['children'].append(item)
-                                    elif current_section:
-                                        current_section['children'].append(item)
-                        else:
-                            # 按句号分割
-                            sentences = content.split('.')
-                            if len(sentences) > 1:
-                                for sentence in sentences:
-                                    sentence = sentence.strip()
-                                    if sentence and len(sentence) > 10:
-                                        item = {'title': sentence, 'children': []}
-                                        if current_subsection:
-                                            current_subsection['children'].append(item)
-                                        elif current_section:
-                                            current_section['children'].append(item)
-                            else:
-                                item = {'title': content, 'children': []}
-                                if current_subsection:
-                                    current_subsection['children'].append(item)
-                                elif current_section:
-                                    current_section['children'].append(item)
-                    else:
+                    # 清理内容
+                    content = self._clean_content(content)
+                    if content:  # 确保清理后的内容不为空
                         item = {'title': content, 'children': []}
-                        if current_subsection:
-                            current_subsection['children'].append(item)
-                        elif current_section:
-                            current_section['children'].append(item)
+                        current_section['children'].append(item)
                         
-            # 数字列表 (1. 内容)
-            elif re.match(r'^\d+\.\s', line):
+            # 数字列表 (1. 内容) - 作为二级节点
+            elif re.match(r'^\d+\.\s', line) and current_section:
                 content = re.sub(r'^\d+\.\s', '', line).strip()
                 if content:
-                    # 处理粗体文本
-                    content = re.sub(r'\*\*(.*?)\*\*', r'\1', content)
-                    item = {'title': content, 'children': []}
-                    if current_subsection:
-                        current_subsection['children'].append(item)
-                    elif current_section:
-                        current_section['children'].append(item)
-                        
-            # 普通段落文本（跳过太长的文本）
-            elif line and not line.startswith('#') and not line.startswith('---'):
-                if current_section and len(line) < 150:
-                    # 清理文本
-                    line = re.sub(r'\*\*(.*?)\*\*', r'\1', line)
-                    item = {'title': line, 'children': []}
-                    if current_subsection:
-                        current_subsection['children'].append(item)
-                    elif current_section:
+                    content = self._clean_content(content)
+                    if content:
+                        item = {'title': content, 'children': []}
                         current_section['children'].append(item)
         
+        # 确保每个一级节点至少有一些内容，如果为空则添加占位内容
+        for section in structure['children']:
+            if not section['children']:
+                section['children'].append({
+                    'title': 'Content will be analyzed here - 此处将分析相关内容',
+                    'children': []
+                })
+        
         return structure
+    
+    def _clean_content(self, content: str) -> str:
+        """
+        清理和格式化内容文本
+        
+        Args:
+            content (str): 原始内容
+            
+        Returns:
+            str: 清理后的内容
+        """
+        if not content:
+            return ""
+            
+        # 移除markdown格式
+        content = re.sub(r'\*\*(.*?)\*\*', r'\1', content)  # 粗体
+        content = re.sub(r'\*(.*?)\*', r'\1', content)      # 斜体
+        content = re.sub(r'`(.*?)`', r'\1', content)        # 代码
+        
+        # 移除多余的空格和换行
+        content = re.sub(r'\s+', ' ', content).strip()
+        
+        # 如果内容太长，适当截取（保留完整句子）
+        if len(content) > 120:
+            # 尝试在句号处截断
+            sentences = content.split('.')
+            if len(sentences) > 1:
+                result = sentences[0] + '.'
+                if len(result) < 80 and len(sentences) > 1:
+                    result += sentences[1] + '.'
+                return result.strip()
+            else:
+                # 如果没有句号，在合适位置截断
+                return content[:100] + '...'
+        
+        return content
     
     def create_xmind_from_structure(self, structure: Dict[str, Any], original_text: str = "") -> Optional[str]:
         """

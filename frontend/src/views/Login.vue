@@ -48,12 +48,6 @@
             <span v-else>登录中...</span>
           </el-button>
         </el-form-item>
-        
-        <div class="login-tips">
-          <el-text type="info" size="small">
-            默认账号：baoni / lulu220519
-          </el-text>
-        </div>
       </el-form>
     </div>
   </div>
