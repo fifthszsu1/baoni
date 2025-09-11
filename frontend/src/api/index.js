@@ -71,6 +71,19 @@ export const api = {
       return axiosInstance.post('/api/analyze/text', { text })
     },
     
+    // 图片文字识别
+    extractTextFromImage(imageFile) {
+      const formData = new FormData()
+      formData.append('image', imageFile)
+      
+      return axiosInstance.post('/api/analyze/ocr', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        timeout: 60000 // OCR可能需要更长时间
+      })
+    },
+    
     // 测试连接
     testConnection() {
       return axiosInstance.get('/api/analyze/test')

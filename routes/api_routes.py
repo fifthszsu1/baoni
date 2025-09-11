@@ -2,6 +2,7 @@ from flask import request, current_app
 from flask_restx import Namespace, Resource, fields
 import logging
 from datetime import datetime
+from werkzeug.datastructures import FileStorage
 from services.openai_service import OpenAIService
 from services.xmind_service import XMindService
 from services.auth_service import AuthService, require_auth
@@ -21,6 +22,14 @@ analysis_result_model = text_analysis_ns.model('AnalysisResult', {
     'success': fields.Boolean(description='分析是否成功'),
     'analysis': fields.String(description='分析结果（markdown格式）'),
     'mindmap_data': fields.Raw(description='思维导图结构化数据'),
+    'tokens_used': fields.Integer(description='使用的token数量'),
+    'error': fields.String(description='错误信息')
+})
+
+# OCR结果模型
+ocr_result_model = text_analysis_ns.model('OCRResult', {
+    'success': fields.Boolean(description='OCR识别是否成功'),
+    'extracted_text': fields.String(description='从图片中提取的英文文本'),
     'tokens_used': fields.Integer(description='使用的token数量'),
     'error': fields.String(description='错误信息')
 })
@@ -253,4 +262,106 @@ class VerifyToken(Resource):
             'success': True,
             'username': user_info['username'],
             'message': 'Token验证成功'
-        }, 200 
+        }, 200
+
+@text_analysis_ns.route('/ocr')
+class ImageOCR(Resource):
+    """图片文字识别接口"""
+    
+    @require_auth
+    @text_analysis_ns.marshal_with(ocr_result_model)
+    @text_analysis_ns.doc(
+        'extract_text_from_image',
+        description='从上传的图片中提取英文文章内容',
+        responses={
+            200: '识别成功',
+            400: '请求参数错误',
+            401: '未授权访问',
+            500: '服务器内部错误'
+        },
+        security='Bearer Auth'
+    )
+    def post(self):
+        """
+        从图片中提取英文文本
+        上传图片文件，使用AI识别其中的英文文章内容
+        """
+        try:
+            # 检查是否有文件上传
+            if 'image' not in request.files:
+                logger.warning("未找到上传的图片文件")
+                return {
+                    'success': False,
+                    'error': '请上传图片文件',
+                    'extracted_text': None,
+                    'tokens_used': 0
+                }, 400
+            
+            file = request.files['image']
+            
+            # 检查文件是否为空
+            if file.filename == '':
+                logger.warning("上传的文件名为空")
+                return {
+                    'success': False,
+                    'error': '请选择要上传的图片文件',
+                    'extracted_text': None,
+                    'tokens_used': 0
+                }, 400
+            
+            # 检查文件类型
+            allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
+            file_extension = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+            
+            if file_extension not in allowed_extensions:
+                logger.warning(f"不支持的文件类型: {file_extension}")
+                return {
+                    'success': False,
+                    'error': f'不支持的图片格式。支持的格式: {", ".join(allowed_extensions)}',
+                    'extracted_text': None,
+                    'tokens_used': 0
+                }, 400
+            
+            # 检查文件大小（限制为10MB）
+            file_data = file.read()
+            if len(file_data) > 10 * 1024 * 1024:  # 10MB
+                logger.warning(f"文件过大: {len(file_data)} bytes")
+                return {
+                    'success': False,
+                    'error': '图片文件大小不能超过10MB',
+                    'extracted_text': None,
+                    'tokens_used': 0
+                }, 400
+            
+            logger.info(f"开始处理图片OCR，文件大小: {len(file_data)} bytes，类型: {file_extension}")
+            
+            # 调用OpenAI服务进行图片文字识别
+            openai_service = OpenAIService()
+            result = openai_service.extract_text_from_image(file_data)
+            
+            if result and result.get('success'):
+                logger.info("图片文字识别成功")
+                return {
+                    'success': True,
+                    'extracted_text': result.get('extracted_text'),
+                    'tokens_used': result.get('tokens_used', 0),
+                    'error': None
+                }, 200
+            else:
+                error_msg = result.get('error', '图片识别失败') if result else '图片识别失败'
+                logger.error(f"图片文字识别失败: {error_msg}")
+                return {
+                    'success': False,
+                    'error': error_msg,
+                    'extracted_text': None,
+                    'tokens_used': 0
+                }, 400
+                
+        except Exception as e:
+            logger.error(f"图片OCR处理异常: {str(e)}")
+            return {
+                'success': False,
+                'error': f'图片处理失败: {str(e)}',
+                'extracted_text': None,
+                'tokens_used': 0
+            }, 500 
