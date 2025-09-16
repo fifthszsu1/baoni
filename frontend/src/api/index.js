@@ -77,10 +77,8 @@ export const api = {
       formData.append('image', imageFile)
       
       return axiosInstance.post('/api/analyze/ocr', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
         timeout: 60000 // OCR可能需要更长时间
+        // 注意：不要手动设置 Content-Type，让浏览器自动设置 multipart/form-data 和 boundary
       })
     },
     
