@@ -284,6 +284,11 @@ const extractTextFromImage = async () => {
     isExtracting.value = true
     ElMessage.info('正在识别图片中的文字，请稍候...')
     
+    // 添加调试信息
+    console.log('选中的图片:', selectedImage.value)
+    console.log('图片类型:', selectedImage.value.type)
+    console.log('图片大小:', selectedImage.value.size)
+    
     const result = await api.analysis.extractTextFromImage(selectedImage.value)
     
     if (result.success && result.extracted_text) {

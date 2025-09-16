@@ -6,6 +6,7 @@ from werkzeug.datastructures import FileStorage
 from services.openai_service import OpenAIService
 from services.xmind_service import XMindService
 from services.auth_service import AuthService, require_auth
+from services.ocr_service import OCRService
 
 logger = logging.getLogger(__name__)
 
@@ -287,6 +288,10 @@ class ImageOCR(Resource):
         上传图片文件，使用AI识别其中的英文文章内容
         """
         try:
+            # 添加调试信息
+            logger.info(f"收到OCR请求，files keys: {list(request.files.keys())}")
+            logger.info(f"收到OCR请求，form keys: {list(request.form.keys())}")
+            
             # 检查是否有文件上传
             if 'image' not in request.files:
                 logger.warning("未找到上传的图片文件")
@@ -335,16 +340,29 @@ class ImageOCR(Resource):
             
             logger.info(f"开始处理图片OCR，文件大小: {len(file_data)} bytes，类型: {file_extension}")
             
-            # 调用OpenAI服务进行图片文字识别
-            openai_service = OpenAIService()
-            result = openai_service.extract_text_from_image(file_data)
+            # 调用OCR服务进行图片文字识别
+            ocr_service = OCRService()
+            
+            # 检查OCR服务是否可用
+            if not ocr_service.is_available():
+                logger.error("OCR服务不可用")
+                return {
+                    'success': False,
+                    'error': 'OCR服务未正确初始化，请检查服务器配置',
+                    'extracted_text': None,
+                    'tokens_used': 0
+                }, 500
+            
+            result = ocr_service.extract_text_from_image(file_data)
             
             if result and result.get('success'):
                 logger.info("图片文字识别成功")
                 return {
                     'success': True,
                     'extracted_text': result.get('extracted_text'),
-                    'tokens_used': result.get('tokens_used', 0),
+                    'tokens_used': 0,  # OCR不使用tokens
+                    'confidence': result.get('confidence', 0),
+                    'lines_count': result.get('lines_count', 0),
                     'error': None
                 }, 200
             else:
