@@ -36,7 +36,7 @@ services:
       - baoni-network
     restart: unless-stopped
     environment:
-      - VUE_APP_API_BASE_URL=http://localhost:5001
+      - VUE_APP_API_BASE_URL=""
 
 networks:
   baoni-network:
