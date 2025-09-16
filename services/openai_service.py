@@ -98,7 +98,7 @@ Please provide the extracted text directly without any additional commentary."""
     
     def analyze_text(self, text: str) -> Optional[Dict[str, Any]]:
         """
-        分析英文文本，提取主要思想和结构
+        分析英文文本，从what、why、how的角度提取中心思想
         
         Args:
             text (str): 需要分析的英文文本
@@ -107,48 +107,32 @@ Please provide the extracted text directly without any additional commentary."""
             Dict: 包含分析结果的字典
         """
         try:
-            # 构建专门用于阅读理解分析的提示词
-            system_prompt = """You are a professional English reading comprehension analyst. Please analyze the provided English article and extract its main ideas and structure to help high school students better understand the text.
+            # 构建专门用于what、why、how分析的提示词
+            system_prompt = """你是一位专业的英文文章分析师。请从what、why、how三个维度分析提供的英文文章，帮助高中生更好地理解文本的核心内容。
 
-IMPORTANT: Please output the analysis results in the EXACT format below (using markdown format). Each section must contain both English and Chinese content:
+请严格按照以下格式输出分析结果（使用markdown格式）：
 
-# Article Analysis
+# 文章分析
 
-## Main Theme
-- [English description of the core theme]
-- [Chinese description of the core theme - 中文描述核心主题]
+## What（是什么）
+- [文章讨论的主要话题、现象或问题是什么]
+- [文章提到的关键概念、人物、事件或观点是什么]
+- [作者想要传达的主要信息是什么]
+- [文章的核心观点和主要内容是什么]
 
-## Article Structure  
-- [English analysis of logical structure, e.g., introduction-body-conclusion]
-- [Chinese analysis - 中文分析文章逻辑结构]
-- [English description of each paragraph's role and relationship]
-- [Chinese description - 中文描述各段落作用和关系]
+## Why（为什么）
+- [作者为什么要讨论这个话题]
+- [文章中提到的现象或问题产生的原因是什么]
+- [作者为什么持有这样的观点或立场]
+- [这个话题为什么重要或值得关注]
 
-## Key Arguments
-- [English extraction of main viewpoints]
-- [Chinese extraction - 中文提取主要观点] 
-- [English list of supporting evidence]
-- [Chinese list - 中文列出支持证据]
+## How（怎么样）
+- [作者是如何论证自己观点的]
+- [文章是如何组织结构和展开论述的]
+- [作者提出了哪些解决方案或建议]
+- [读者应该如何理解和应用这些内容]
 
-## Important Details
-- [English key facts and data]
-- [Chinese key facts - 中文重要事实和数据]
-- [English important examples and explanations]
-- [Chinese examples - 中文重要例子和解释]
-
-## Language Features
-- [English description of writing style]
-- [Chinese description - 中文描述写作风格]
-- [English description of important rhetorical devices]
-- [Chinese description - 中文描述重要修辞手法]
-
-## Reading Comprehension Points
-- [English potential exam focus points]
-- [Chinese focus points - 中文潜在考试重点]
-- [English understanding difficulty hints]
-- [Chinese hints - 中文理解难度提示]
-
-Please ensure each section has 2-4 bullet points, with each point containing both English and Chinese content. Keep the analysis well-organized and suitable for high school students' comprehension level.
+请确保每个部分有3-4个要点，分析要深入浅出，适合高中生的理解水平。只需要输出中文分析，不需要英文内容。
 """
 
             user_prompt = f"Please analyze the following English article:\n\n{text}"

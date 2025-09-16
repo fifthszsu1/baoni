@@ -176,8 +176,9 @@ const containerStyle = computed(() => ({
 }
 
 .node-content.level-1 {
-  min-width: 160px;
-  max-width: 220px;
+  min-width: 140px;
+  max-width: 200px;
+  flex: 1; /* 平均分配空间 */
 }
 
 .node-content.level-1 h3 {
@@ -210,14 +211,16 @@ const containerStyle = computed(() => ({
 
 .branches {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
   position: relative;
   margin-top: 20px;
 }
 
 .branches.level-1 {
-  gap: 20px;
+  flex-wrap: nowrap; /* 确保不换行 */
+  gap: 15px; /* 稍微减小间距以适应更多内容 */
+  width: 100%;
+  max-width: 1200px; /* 设置最大宽度 */
 }
 
 .branches.level-2 {
@@ -233,6 +236,11 @@ const containerStyle = computed(() => ({
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.branches.level-1 > .branch {
+  flex: 1; /* 让每个分支平均分配空间 */
+  min-width: 0; /* 允许收缩 */
 }
 
 .branches.level-2 .branch {
@@ -324,17 +332,36 @@ const containerStyle = computed(() => ({
 }
 
 /* 响应式设计 */
+@media (max-width: 1024px) {
+  .branches.level-1 {
+    gap: 10px; /* 在中等屏幕上减少间距 */
+  }
+  
+  .node-content.level-1 {
+    min-width: 120px;
+    max-width: 180px;
+  }
+}
+
 @media (max-width: 768px) {
   .mindmap-container {
     padding: 20px;
   }
   
   .branches.level-1 {
-    flex-direction: column;
-    align-items: center;
+    gap: 8px; /* 在小屏幕上进一步减少间距 */
   }
   
-  .node-content.level-1,
+  .node-content.level-1 {
+    min-width: 100px;
+    max-width: 150px;
+    font-size: 12px; /* 减小字体 */
+  }
+  
+  .node-content.level-1 h3 {
+    font-size: 12px;
+  }
+  
   .node-content.level-2 {
     min-width: auto;
     max-width: 200px;
@@ -346,6 +373,22 @@ const containerStyle = computed(() => ({
     right: auto;
     margin-top: 20px;
     justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .branches.level-1 {
+    gap: 5px;
+  }
+  
+  .node-content.level-1 {
+    min-width: 80px;
+    max-width: 120px;
+    padding: 8px 12px;
+  }
+  
+  .node-content.level-1 h3 {
+    font-size: 11px;
   }
 }
 </style> 

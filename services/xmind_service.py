@@ -19,8 +19,8 @@ class XMindService:
     def parse_markdown_to_structure(self, markdown_text: str) -> Dict[str, Any]:
         """
         解析markdown文本为固定的3层思维导图结构
-        根节点: Article Analysis
-        一级节点: Main Theme, Article Structure, Key Arguments, Important Details, Language Features, Reading Comprehension Points
+        根节点: 文章分析
+        一级节点: What（是什么）, Why（为什么）, How（怎么样）
         二级节点: 每个一级节点下的具体内容点
         
         Args:
@@ -33,14 +33,11 @@ class XMindService:
         
         # 固定的3层结构
         structure = {
-            'title': 'Article Analysis',
+            'title': '文章分析',
             'children': [
-                {'title': 'Main Theme', 'children': []},
-                {'title': 'Article Structure', 'children': []},
-                {'title': 'Key Arguments', 'children': []},
-                {'title': 'Important Details', 'children': []},
-                {'title': 'Language Features', 'children': []},
-                {'title': 'Reading Comprehension Points', 'children': []}
+                {'title': 'What（是什么）', 'children': []},
+                {'title': 'Why（为什么）', 'children': []},
+                {'title': 'How（怎么样）', 'children': []}
             ]
         }
         
@@ -56,11 +53,11 @@ class XMindService:
             if not line:
                 continue
                 
-            # 一级标题 (# Article Analysis) - 忽略，使用固定标题
+            # 一级标题 (# 文章分析) - 忽略，使用固定标题
             if line.startswith('# '):
                 continue
                 
-            # 二级标题 (## Main Theme, ## Article Structure, etc.)
+            # 二级标题 (## 中心思想, ## What（是什么）, etc.)
             elif line.startswith('## '):
                 section_title = line[3:].strip()
                 # 清理标题中的序号
@@ -76,18 +73,12 @@ class XMindService:
                 # 如果没找到匹配的，根据关键词判断
                 if not current_section:
                     title_lower = section_title.lower()
-                    if 'theme' in title_lower or '主题' in title_lower:
-                        current_section = section_map['Main Theme']
-                    elif 'structure' in title_lower or '结构' in title_lower:
-                        current_section = section_map['Article Structure']
-                    elif 'argument' in title_lower or '观点' in title_lower or '论点' in title_lower:
-                        current_section = section_map['Key Arguments']
-                    elif 'detail' in title_lower or '细节' in title_lower or '事实' in title_lower:
-                        current_section = section_map['Important Details']
-                    elif 'language' in title_lower or 'feature' in title_lower or '语言' in title_lower or '特征' in title_lower:
-                        current_section = section_map['Language Features']
-                    elif 'comprehension' in title_lower or 'reading' in title_lower or '理解' in title_lower or '阅读' in title_lower:
-                        current_section = section_map['Reading Comprehension Points']
+                    if 'what' in title_lower or '是什么' in title_lower or '什么' in title_lower:
+                        current_section = section_map['What（是什么）']
+                    elif 'why' in title_lower or '为什么' in title_lower or '原因' in title_lower:
+                        current_section = section_map['Why（为什么）']
+                    elif 'how' in title_lower or '怎么样' in title_lower or '如何' in title_lower or '方式' in title_lower:
+                        current_section = section_map['How（怎么样）']
                 
             # 三级标题 (### 子标题) - 在固定3层结构中忽略
             elif line.startswith('### '):
