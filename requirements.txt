@@ -9,6 +9,10 @@ markdown==3.5.2
 beautifulsoup4==4.12.2
 Werkzeug==3.0.1
 PyJWT==2.8.0
+# 数据库相关依赖
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.25
+PyMySQL==1.1.0
 # OCR相关依赖（使用Tesseract，更轻量级）
 pytesseract==0.3.10
 Pillow==10.0.1

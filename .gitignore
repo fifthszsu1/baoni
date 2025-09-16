@@ -71,6 +71,19 @@ Thumbs.db
 uploads/
 !uploads/.gitkeep
 
+# MySQL数据文件 - 数据库运行时产生的文件，不应被Git跟踪
+data/mysql/
+data/uploads/
+*.sock
+*.pid
+*.cnf.bak
+auto.cnf
+binlog.*
+ib_*
+mysql.sock*
+*.err
+*.log
+
 # Node modules (for frontend)
 node_modules/
 npm-debug.log*

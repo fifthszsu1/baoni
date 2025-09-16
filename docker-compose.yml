@@ -1,4 +1,30 @@
 services:
+  # MySQL数据库 - 英语读后续写打分系统
+  mysql:
+    image: ${MYSQL_IMAGE:-mysql:8.0}
+    container_name: baoni-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: BaoniRoot@2025
+      MYSQL_DATABASE: baoni_scoring_db
+      MYSQL_USER: baoni_user
+      MYSQL_PASSWORD: baoni_password
+    ports:
+      - "3307:3306"  # 使用3307端口避免与tb-wei项目冲突
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+      - ./mysql/config:/etc/mysql/conf.d
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - baoni-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
   backend:
     build:
       context: .
@@ -9,6 +35,7 @@ services:
     environment:
       - FLASK_ENV=production
       - FLASK_DEBUG=False
+      - DATABASE_URL=mysql+pymysql://baoni_user:baoni_password@mysql:3306/baoni_scoring_db?charset=utf8mb4
     env_file:
       - .env
     volumes:
@@ -16,6 +43,9 @@ services:
     networks:
       - baoni-network
     restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
@@ -43,6 +73,12 @@ networks:
     driver: bridge
 
 volumes:
+  mysql_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/mysql
   uploads-data:
     driver: local
     driver_opts:

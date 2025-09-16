@@ -24,6 +24,22 @@ class Config:
     AZURE_DEPLOYMENT_NAME = os.environ.get('AZURE_DEPLOYMENT_NAME') or 'gpt-4'
     AZURE_API_VERSION = os.environ.get('AZURE_API_VERSION') or '2025-01-01-preview'
     
+    # 数据库配置
+    DATABASE_URL = os.environ.get('DATABASE_URL') or 'mysql+pymysql://baoni_user:baoni_password@localhost:3307/baoni_scoring_db?charset=utf8mb4'
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 10,
+        'pool_timeout': 20,
+        'pool_recycle': -1,
+        'max_overflow': 0,
+        'echo': DEBUG,  # 在调试模式下显示SQL语句
+        'connect_args': {
+            'charset': 'utf8mb4',
+            'use_unicode': True
+        }
+    }
+    
     # API配置
     RESTX_VALIDATE = True
     RESTX_MASK_SWAGGER = False

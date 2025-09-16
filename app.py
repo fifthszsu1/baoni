@@ -4,6 +4,7 @@ from flask_cors import CORS
 import os
 import logging
 from config import Config
+from models import db
 
 def create_app():
     """创建并配置Flask应用"""
@@ -12,6 +13,18 @@ def create_app():
     
     # 初始化配置
     Config.init_app(app)
+    
+    # 初始化数据库
+    db.init_app(app)
+    
+    # 创建数据库表
+    with app.app_context():
+        try:
+            db.create_all()
+            app.logger.info("数据库表创建成功")
+        except Exception as e:
+            app.logger.error(f"数据库初始化失败: {str(e)}")
+            # 不抛出异常，允许应用启动
     
     # 启用CORS
     CORS(app, resources={
