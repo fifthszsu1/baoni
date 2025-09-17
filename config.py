@@ -16,7 +16,7 @@ class Config:
     
     # 文件上传配置
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'uploads')
-    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))  # 16MB
+    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 20 * 1024 * 1024))  # 20MB
     
     # Azure OpenAI配置
     AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY')

@@ -5,6 +5,11 @@
       <div class="root-node">
         <div class="node-content root">
           <h2>{{ data.title || '文章分析' }}</h2>
+          <div v-if="articleStructure.type !== 'unknown'" class="article-type-badge">
+            <span class="type-label">
+              {{ getArticleTypeLabel(articleStructure) }}
+            </span>
+          </div>
         </div>
         
         <!-- 第一级分支 -->
@@ -86,6 +91,41 @@ const props = defineProps({
 
 const zoomLevel = ref(1)
 
+// 检测文体类型和结构
+const articleStructure = computed(() => {
+  if (!props.data || !props.data.children) return { type: 'unknown', structure: 'default' }
+  
+  const firstLevelTitles = props.data.children.map(child => child.title)
+  
+  // 检测议论文结构
+  if (firstLevelTitles.some(title => title.includes('论点')) && 
+      firstLevelTitles.some(title => title.includes('论据')) && 
+      firstLevelTitles.some(title => title.includes('总结'))) {
+    return { type: 'argumentative', structure: 'argument' }
+  }
+  
+  // 检测说明文结构
+  if (firstLevelTitles.some(title => title.includes('概念') || title.includes('标准') || title.includes('特点'))) {
+    return { type: 'expository', structure: 'classification' }
+  }
+  if (firstLevelTitles.some(title => title.includes('对象') || title.includes('角度') || title.includes('差异'))) {
+    return { type: 'expository', structure: 'comparison' }
+  }
+  if (firstLevelTitles.some(title => title.includes('起始') || title.includes('步骤') || title.includes('结果'))) {
+    return { type: 'expository', structure: 'process' }
+  }
+  if (firstLevelTitles.some(title => title.includes('现象') || title.includes('原因') || title.includes('影响'))) {
+    return { type: 'expository', structure: 'causal' }
+  }
+  
+  // 兼容旧格式
+  if (firstLevelTitles.some(title => title.includes('What') || title.includes('Why') || title.includes('How'))) {
+    return { type: 'legacy', structure: 'what-why-how' }
+  }
+  
+  return { type: 'unknown', structure: 'default' }
+})
+
 const zoomIn = () => {
   if (zoomLevel.value < 1.5) {
     zoomLevel.value = Math.min(1.5, zoomLevel.value + 0.1)
@@ -103,8 +143,58 @@ const resetZoom = () => {
 }
 
 const getNodeClass = (index, total) => {
+  const structure = articleStructure.value
+  
+  // 根据文体类型选择不同的颜色方案
+  if (structure.type === 'argumentative') {
+    // 议论文：论点(红) - 论据(蓝) - 总结(绿)
+    const argumentColors = ['red', 'blue', 'green']
+    return `color-${argumentColors[index % argumentColors.length]} argumentative`
+  } else if (structure.type === 'expository') {
+    // 说明文：根据不同结构类型选择颜色
+    if (structure.structure === 'classification') {
+      // 分类说明：概念(紫) - 标准(橙) - 特点(青)
+      const classificationColors = ['purple', 'orange', 'cyan']
+      return `color-${classificationColors[index % classificationColors.length]} expository-classification`
+    } else if (structure.structure === 'comparison') {
+      // 对比说明：对象(红) - 角度(蓝) - 差异(绿)
+      const comparisonColors = ['red', 'blue', 'green']
+      return `color-${comparisonColors[index % comparisonColors.length]} expository-comparison`
+    } else if (structure.structure === 'process') {
+      // 流程说明：起始(绿) - 步骤(橙) - 结果(红)
+      const processColors = ['green', 'orange', 'red']
+      return `color-${processColors[index % processColors.length]} expository-process`
+    } else if (structure.structure === 'causal') {
+      // 因果说明：现象(蓝) - 原因(橙) - 影响(红)
+      const causalColors = ['blue', 'orange', 'red']
+      return `color-${causalColors[index % causalColors.length]} expository-causal`
+    }
+  } else if (structure.type === 'legacy') {
+    // 兼容旧格式：What(蓝) - Why(橙) - How(绿)
+    const legacyColors = ['blue', 'orange', 'green']
+    return `color-${legacyColors[index % legacyColors.length]} legacy`
+  }
+  
+  // 默认颜色方案
   const colors = ['red', 'blue', 'green', 'orange', 'purple', 'pink']
   return `color-${colors[index % colors.length]}`
+}
+
+const getArticleTypeLabel = (structure) => {
+  if (structure.type === 'argumentative') {
+    return '议论文结构'
+  } else if (structure.type === 'expository') {
+    const structureLabels = {
+      'classification': '说明文 - 分类说明',
+      'comparison': '说明文 - 对比说明', 
+      'process': '说明文 - 流程说明',
+      'causal': '说明文 - 因果说明'
+    }
+    return structureLabels[structure.structure] || '说明文'
+  } else if (structure.type === 'legacy') {
+    return '传统分析结构'
+  }
+  return '未知结构'
 }
 
 const downloadImage = async () => {
@@ -175,10 +265,26 @@ const containerStyle = computed(() => ({
   font-size: 20px;
 }
 
+.article-type-badge {
+  margin-top: 8px;
+}
+
+.type-label {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: normal;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
 .node-content.level-1 {
   min-width: 140px;
-  max-width: 200px;
-  flex: 1; /* 平均分配空间 */
+  max-width: 280px; /* 增加最大宽度以适应更长的内容 */
+  width: auto; /* 根据内容自动调整宽度 */
 }
 
 .node-content.level-1 h3 {
@@ -189,9 +295,12 @@ const containerStyle = computed(() => ({
 }
 
 .node-content.level-2 {
-  min-width: 140px;
-  max-width: 280px;
+  min-width: 120px;
+  max-width: 320px; /* 增加最大宽度 */
+  width: auto; /* 根据内容自动调整 */
   background: #f8f9fa;
+  word-wrap: break-word; /* 长单词自动换行 */
+  hyphens: auto; /* 启用连字符换行 */
 }
 
 .node-content.level-2 p {
@@ -208,6 +317,33 @@ const containerStyle = computed(() => ({
 .node-content.color-orange { border-left: 4px solid #ed8936; }
 .node-content.color-purple { border-left: 4px solid #9f7aea; }
 .node-content.color-pink { border-left: 4px solid #ed64a6; }
+.node-content.color-cyan { border-left: 4px solid #38b2ac; }
+
+/* 文体类型特殊样式 */
+.node-content.argumentative {
+  box-shadow: 0 2px 8px rgba(245, 101, 101, 0.15);
+}
+
+.node-content.expository-classification {
+  box-shadow: 0 2px 8px rgba(159, 122, 234, 0.15);
+}
+
+.node-content.expository-comparison {
+  box-shadow: 0 2px 8px rgba(66, 153, 225, 0.15);
+}
+
+.node-content.expository-process {
+  box-shadow: 0 2px 8px rgba(72, 187, 120, 0.15);
+}
+
+.node-content.expository-causal {
+  box-shadow: 0 2px 8px rgba(237, 137, 54, 0.15);
+}
+
+.node-content.legacy {
+  opacity: 0.9;
+  font-style: italic;
+}
 
 .branches {
   display: flex;
@@ -218,9 +354,10 @@ const containerStyle = computed(() => ({
 
 .branches.level-1 {
   flex-wrap: nowrap; /* 确保不换行 */
-  gap: 15px; /* 稍微减小间距以适应更多内容 */
+  gap: 20px; /* 适当的间距 */
   width: 100%;
-  max-width: 1200px; /* 设置最大宽度 */
+  max-width: 1400px; /* 增加最大宽度以适应更长的内容 */
+  align-items: flex-start; /* 顶部对齐而不是强制底部对齐 */
 }
 
 .branches.level-2 {
@@ -239,8 +376,9 @@ const containerStyle = computed(() => ({
 }
 
 .branches.level-1 > .branch {
-  flex: 1; /* 让每个分支平均分配空间 */
-  min-width: 0; /* 允许收缩 */
+  flex: 0 1 auto; /* 让每个分支根据内容自然调整大小 */
+  min-width: 120px; /* 设置最小宽度避免过窄 */
+  max-width: 300px; /* 设置最大宽度避免过宽 */
 }
 
 .branches.level-2 .branch {

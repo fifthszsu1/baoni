@@ -5,7 +5,7 @@ SECRET_KEY=your-secret-key-here-change-in-production
 
 # 文件上传配置
 UPLOAD_FOLDER=uploads
-MAX_CONTENT_LENGTH=16777216
+MAX_CONTENT_LENGTH=20971520
 
 # Azure OpenAI配置
 AZURE_OPENAI_API_KEY=your-azure-openai-api-key

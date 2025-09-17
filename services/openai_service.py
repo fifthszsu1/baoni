@@ -98,7 +98,7 @@ Please provide the extracted text directly without any additional commentary."""
     
     def analyze_text(self, text: str) -> Optional[Dict[str, Any]]:
         """
-        分析英文文本，从what、why、how的角度提取中心思想
+        分析英文文本，先判断文体类型，然后根据文体结构生成思维导图
         
         Args:
             text (str): 需要分析的英文文本
@@ -107,35 +107,43 @@ Please provide the extracted text directly without any additional commentary."""
             Dict: 包含分析结果的字典
         """
         try:
-            # 构建专门用于what、why、how分析的提示词
-            system_prompt = """你是一位专业的英文文章分析师。请从what、why、how三个维度分析提供的英文文章，帮助高中生更好地理解文本的核心内容。
+            # 构建新的文体分析提示词
+            system_prompt = """你是一位专业的英文文章分析师。请先判断文章的文体类型，然后根据文体特点进行结构化分析，输出关键词思维导图。
 
 请严格按照以下格式输出分析结果（使用markdown格式）：
 
 # 文章分析
 
-## What（是什么）
-- [文章讨论的主要话题、现象或问题是什么]
-- [文章提到的关键概念、人物、事件或观点是什么]
-- [作者想要传达的主要信息是什么]
-- [文章的核心观点和主要内容是什么]
+## 文体类型
+[说明文/议论文]
 
-## Why（为什么）
-- [作者为什么要讨论这个话题]
-- [文章中提到的现象或问题产生的原因是什么]
-- [作者为什么持有这样的观点或立场]
-- [这个话题为什么重要或值得关注]
+## 结构分析
 
-## How（怎么样）
-- [作者是如何论证自己观点的]
-- [文章是如何组织结构和展开论述的]
-- [作者提出了哪些解决方案或建议]
-- [读者应该如何理解和应用这些内容]
+### 如果是说明文：
+判断属于以下哪种结构类型，并提取关键词：
+- **分类说明**：主要概念 → 分类标准 → 各类别特点
+- **对比说明**：对比对象 → 对比角度 → 差异要点  
+- **流程说明**：起始状态 → 关键步骤 → 最终结果
+- **因果说明**：现象描述 → 原因分析 → 结果影响
 
-请确保每个部分有3-4个要点，分析要深入浅出，适合高中生的理解水平。只需要输出中文分析，不需要英文内容。
-"""
+### 如果是议论文：
+按照经典议论文结构提取关键词：
+- **论点**：核心观点
+- **论据**：主要证据1、主要证据2、主要证据3
+- **总结呼吁**：结论要点
 
-            user_prompt = f"Please analyze the following English article:\n\n{text}"
+## 思维导图关键词
+- 中心主题：[一个核心关键词]
+- 主要分支：[3-5个关键词]
+- 次要分支：[每个主分支下2-3个关键词]
+
+注意：
+1. 只输出关键词和短语，不要长句
+2. 每个关键词不超过5个字
+3. 重点突出文章的逻辑结构
+4. 适合制作思维导图使用"""
+
+            user_prompt = f"请分析以下英文文章的文体类型和结构，并提取关键词用于制作思维导图：\n\n{text}"
             
             response = self.client.chat.completions.create(
                 model=self.deployment_name,
@@ -144,7 +152,7 @@ Please provide the extracted text directly without any additional commentary."""
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.3,
-                max_tokens=2000
+                max_tokens=1500  # 减少token数量，因为输出更简洁
             )
             
             analysis_result = response.choices[0].message.content

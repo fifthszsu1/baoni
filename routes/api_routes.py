@@ -113,6 +113,7 @@ class TextAnalysis(Resource):
             # 生成思维导图结构数据
             logger.info("Generating mindmap structure data")
             logger.info(f"Analysis result length: {len(analysis_result.get('analysis', ''))}")
+            logger.info(f"Analysis result content: {analysis_result['analysis'][:500]}...")
             
             try:
                 # 只解析结构，不生成文件
@@ -136,7 +137,10 @@ class TextAnalysis(Resource):
                 'success': True,
                 'analysis': analysis_result['analysis'],
                 'mindmap_data': mindmap_data,
-                'tokens_used': analysis_result.get('tokens_used', 0)
+                'tokens_used': analysis_result.get('tokens_used', 0),
+                'debug_info': {
+                    'raw_analysis': analysis_result['analysis'][:500] + '...' if len(analysis_result['analysis']) > 500 else analysis_result['analysis']
+                }
             }, 200
             
         except Exception as e:
@@ -327,13 +331,13 @@ class ImageOCR(Resource):
                     'tokens_used': 0
                 }, 400
             
-            # 检查文件大小（限制为10MB）
+            # 检查文件大小（限制为15MB，考虑Base64编码后的大小）
             file_data = file.read()
-            if len(file_data) > 10 * 1024 * 1024:  # 10MB
+            if len(file_data) > 15 * 1024 * 1024:  # 15MB
                 logger.warning(f"文件过大: {len(file_data)} bytes")
                 return {
                     'success': False,
-                    'error': '图片文件大小不能超过10MB',
+                    'error': '图片文件大小不能超过15MB',
                     'extracted_text': None,
                     'tokens_used': 0
                 }, 400

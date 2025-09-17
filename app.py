@@ -65,8 +65,10 @@ def create_app():
     
     # 注册命名空间
     from routes.api_routes import text_analysis_ns, auth_ns
+    from routes.miniprogram_routes import miniprogram_ns
     api.add_namespace(text_analysis_ns, path='/analyze')
     api.add_namespace(auth_ns, path='/auth')
+    api.add_namespace(miniprogram_ns, path='/miniprogram')
     
     # 静态文件路由
     @app.route('/downloads/<filename>')

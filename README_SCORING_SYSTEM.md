@@ -181,11 +181,27 @@ AI评分和反馈 → 存储结果 → 返回评分结果
 - [x] 数据库设计和初始化
 - [x] Docker配置和部署脚本
 - [x] 数据模型定义
-- [ ] OCR服务集成
-- [ ] AI评分服务
-- [ ] 小程序API接口
+- [x] OCR服务集成
+- [x] AI评分服务
+- [x] 小程序API接口
+- [x] 管理接口（创建题目和评分规则）
 - [ ] 管理后台界面
 - [ ] 性能优化和监控
+
+## API接口清单
+
+| 接口 | 功能 | 方法 | 路径 |
+|------|------|------|------|
+| 题目列表 | 获取可用题目 | GET | `/miniprogram/topics` |
+| 题目详情 | 获取题目信息 | GET | `/miniprogram/topics/{id}` |
+| 评分规则 | 获取评分标准 | GET | `/miniprogram/scoring-rules` |
+| **作文提交** | **核心评分接口** | **POST** | **`/miniprogram/compositions/submit`** |
+| 作文详情 | 查看评分结果 | GET | `/miniprogram/compositions/{id}` |
+| 作文列表 | 批量查询作文 | GET | `/miniprogram/compositions` |
+| 教师列表 | 获取教师信息 | GET | `/miniprogram/teachers` |
+| 健康检查 | 服务状态检测 | GET | `/miniprogram/health` |
+| **创建评分规则** | **管理接口** | **POST** | **`/miniprogram/admin/scoring-rules`** |
+| **创建题目** | **管理接口（支持OCR）** | **POST** | **`/miniprogram/admin/topics`** |
 
 ## 编码问题解决
 

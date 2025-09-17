@@ -72,8 +72,8 @@ class OCRService:
                 processed_image = sharpened_image
             
             # 使用Tesseract进行OCR识别
-            # 配置参数：只识别英文，优化识别精度
-            custom_config = r'--oem 3 --psm 6 -l eng'
+            # 配置参数：识别中英文，优化识别精度
+            custom_config = r'--oem 3 --psm 6 -l chi_sim+eng'
             
             # 获取详细识别结果（包含置信度）
             data = self.tesseract.image_to_data(processed_image, config=custom_config, output_type=self.tesseract.Output.DICT)

@@ -65,7 +65,8 @@
                         将图片拖拽到此处，或<em>点击上传</em>
                       </div>
                       <div class="el-upload__tip">
-                        支持 PNG、JPG、JPEG、GIF、BMP、WEBP 格式，文件大小不超过 10MB
+                        支持 PNG、JPG、JPEG、GIF、BMP、WEBP 格式，文件大小不超过 15MB<br>
+                        <small style="color: #909399;">大图片将自动压缩以提高识别速度</small>
                       </div>
                     </div>
                     <div v-else class="image-preview">
@@ -251,8 +252,8 @@ const handleImageSelect = (file) => {
     return
   }
   
-  if (file.raw.size > 10 * 1024 * 1024) {
-    ElMessage.error('图片文件大小不能超过 10MB')
+  if (file.raw.size > 15 * 1024 * 1024) {
+    ElMessage.error('图片文件大小不能超过 15MB')
     return
   }
   
@@ -274,6 +275,43 @@ const removeImage = () => {
   }
 }
 
+// 图片压缩函数
+const compressImage = (file, quality = 0.7, maxWidth = 2000, maxHeight = 2000) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    
+    img.onload = () => {
+      // 计算新的尺寸
+      let { width, height } = img
+      
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height)
+        width *= ratio
+        height *= ratio
+      }
+      
+      canvas.width = width
+      canvas.height = height
+      
+      // 绘制并压缩
+      ctx.drawImage(img, 0, 0, width, height)
+      
+      canvas.toBlob((blob) => {
+        // 给压缩后的Blob添加原始文件名，确保后端能正确识别文件类型
+        const compressedFile = new File([blob], file.name, {
+          type: 'image/jpeg',
+          lastModified: Date.now()
+        })
+        resolve(compressedFile)
+      }, 'image/jpeg', quality)
+    }
+    
+    img.src = URL.createObjectURL(file)
+  })
+}
+
 const extractTextFromImage = async () => {
   if (!selectedImage.value) {
     ElMessage.warning('请先选择图片')
@@ -289,7 +327,15 @@ const extractTextFromImage = async () => {
     console.log('图片类型:', selectedImage.value.type)
     console.log('图片大小:', selectedImage.value.size)
     
-    const result = await api.analysis.extractTextFromImage(selectedImage.value)
+    // 如果图片大于5MB，先压缩
+    let imageToUpload = selectedImage.value
+    if (selectedImage.value.size > 5 * 1024 * 1024) {
+      ElMessage.info('图片较大，正在压缩以提高识别速度...')
+      imageToUpload = await compressImage(selectedImage.value, 0.7) // 压缩到70%质量
+      console.log('压缩后图片大小:', imageToUpload.size)
+    }
+    
+    const result = await api.analysis.extractTextFromImage(imageToUpload)
     
     if (result.success && result.extracted_text) {
       inputText.value = result.extracted_text
@@ -303,7 +349,28 @@ const extractTextFromImage = async () => {
     }
   } catch (error) {
     console.error('图片识别失败:', error)
-    ElMessage.error('图片识别失败，请检查网络连接或稍后重试')
+    
+    // 根据错误类型提供更具体的错误信息
+    let errorMessage = '图片识别失败，请稍后重试'
+    
+    if (error.response) {
+      const status = error.response.status
+      if (status === 413) {
+        errorMessage = '图片文件过大，请选择更小的图片或等待自动压缩完成'
+      } else if (status === 400) {
+        errorMessage = error.response.data?.error || '请求参数错误，请检查图片格式'
+      } else if (status === 500) {
+        errorMessage = '服务器处理错误，请稍后重试'
+      } else if (status === 401) {
+        errorMessage = '登录已过期，请重新登录'
+      }
+    } else if (error.code === 'NETWORK_ERROR') {
+      errorMessage = '网络连接错误，请检查网络连接'
+    } else if (error.code === 'TIMEOUT') {
+      errorMessage = '请求超时，图片可能过大，请尝试更小的图片'
+    }
+    
+    ElMessage.error(errorMessage)
   } finally {
     isExtracting.value = false
   }
