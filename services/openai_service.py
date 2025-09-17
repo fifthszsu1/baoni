@@ -118,6 +118,9 @@ Please provide the extracted text directly without any additional commentary."""
 [说明文/议论文]
 
 ## 结构分析
+先判断文章的文体类型，然后根据文体类型进行结构分析。
+说明文 的结构通常是分类、对比、流程、因果等，侧重于有条理地展开说明。
+议论文 的经典结构是提出论点 -> 提供论据 -> 总结呼吁
 
 ### 如果是说明文：
 判断属于以下哪种结构类型，并提取关键词：
