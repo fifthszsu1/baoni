@@ -52,7 +52,30 @@ class XMindService:
             if '文体类型' in line:
                 logger.info(f"跳过文体类型标题行: {line}")
                 continue
-            if '说明文' in line and not article_type:
+            # 检测7种新文体类型
+            if '实验研究与报告' in line and not article_type:
+                article_type = '实验研究与报告'
+                logger.info(f"检测到文体类型: {article_type}")
+            elif '事理阐释类论说文' in line and not article_type:
+                article_type = '事理阐释类论说文'
+                logger.info(f"检测到文体类型: {article_type}")
+            elif '新兴技术介绍' in line and not article_type:
+                article_type = '新兴技术介绍'
+                logger.info(f"检测到文体类型: {article_type}")
+            elif '社会发展新现象类' in line and not article_type:
+                article_type = '社会发展新现象类'
+                logger.info(f"检测到文体类型: {article_type}")
+            elif '问题解决类说明文' in line and not article_type:
+                article_type = '问题解决类说明文'
+                logger.info(f"检测到文体类型: {article_type}")
+            elif '社会发展与变迁类' in line and not article_type:
+                article_type = '社会发展与变迁类'
+                logger.info(f"检测到文体类型: {article_type}")
+            elif '书评' in line and not article_type:
+                article_type = '书评'
+                logger.info(f"检测到文体类型: {article_type}")
+            # 兼容旧格式
+            elif '说明文' in line and not article_type:
                 article_type = '说明文'
                 logger.info(f"检测到文体类型: {article_type}")
             elif '议论文' in line and not article_type:
@@ -108,7 +131,58 @@ class XMindService:
                 logger.info("通过英文关键词推断为说明文")
         
         # 根据文体类型设置不同的结构
-        if article_type == '说明文':
+        if article_type == '实验研究与报告':
+            structure['children'] = [
+                {'title': '背景介绍', 'children': []},
+                {'title': '研究过程', 'children': []},
+                {'title': '归纳文章大意', 'children': []}
+            ]
+        elif article_type == '事理阐释类论说文':
+            structure['children'] = [
+                {'title': '提出论点', 'children': []},
+                {'title': '进行论证', 'children': []},
+                {'title': '得出结论', 'children': []},
+                {'title': '归纳文章大意', 'children': []}
+            ]
+        elif article_type == '新兴技术介绍':
+            structure['children'] = [
+                {'title': '技术背景', 'children': []},
+                {'title': '介绍技术', 'children': []},
+                {'title': '技术评价', 'children': []},
+                {'title': '发明前景', 'children': []},
+                {'title': '归纳文章大意', 'children': []}
+            ]
+        elif article_type == '社会发展新现象类':
+            structure['children'] = [
+                {'title': '引出现象', 'children': []},
+                {'title': '说明现象普遍性', 'children': []},
+                {'title': '分析原因', 'children': []},
+                {'title': '说明影响并表达看法', 'children': []}
+            ]
+        elif article_type == '问题解决类说明文':
+            structure['children'] = [
+                {'title': '提出问题', 'children': []},
+                {'title': '解决措施', 'children': []},
+                {'title': '措施成效及评价', 'children': []},
+                {'title': '归纳文章大意', 'children': []}
+            ]
+        elif article_type == '社会发展与变迁类':
+            structure['children'] = [
+                {'title': '背景介绍', 'children': []},
+                {'title': '现在发展历程', 'children': []},
+                {'title': '过去发展历程', 'children': []},
+                {'title': '表达看法', 'children': []}
+            ]
+        elif article_type == '书评':
+            structure['children'] = [
+                {'title': '背景介绍', 'children': []},
+                {'title': '内容介绍', 'children': []},
+                {'title': '图书推荐', 'children': []},
+                {'title': '图书评价', 'children': []},
+                {'title': '发表观点', 'children': []}
+            ]
+        # 兼容旧格式
+        elif article_type == '说明文':
             if structure_type and '分类说明' in structure_type:
                 structure['children'] = [
                     {'title': '主要概念', 'children': []},
@@ -249,10 +323,90 @@ class XMindService:
                             title_part = parts[0].replace('**', '').strip()
                             content_part = parts[1].strip()
                             
-                            # 根据标题找到对应的节点
+                            # 根据标题找到对应的节点 - 支持所有文体结构
                             target_section = None
                             for fixed_title, section in section_map.items():
-                                if any(keyword in title_part for keyword in ['起始', '开始', '初始']) and '起始' in fixed_title:
+                                # 精确匹配优先
+                                if title_part == fixed_title:
+                                    target_section = section
+                                    break
+                                
+                                # 关键词匹配 - 7种新文体结构
+                                elif '引出现象' in fixed_title and any(kw in title_part for kw in ['开门见山', '引用事例', '前后对比']):
+                                    target_section = section
+                                    break
+                                elif '说明现象普遍性' in fixed_title and any(kw in title_part for kw in ['举例说明', '数据支撑', '具体做法']):
+                                    target_section = section
+                                    break
+                                elif '分析原因' in fixed_title and any(kw in title_part for kw in ['举例分析', '原因说明']):
+                                    target_section = section
+                                    break
+                                elif '说明影响并表达看法' in fixed_title and any(kw in title_part for kw in ['说明影响', '表达看法']):
+                                    target_section = section
+                                    break
+                                elif '背景介绍' in fixed_title and any(kw in title_part for kw in ['研究背景', '研究主体', '话题引入', '经历引入', '作者背景', '创作背景', '段落大意', '写作意图']):
+                                    target_section = section
+                                    break
+                                elif '研究过程' in fixed_title and any(kw in title_part for kw in ['研究设计', '研究实施', '实施过程']):
+                                    target_section = section
+                                    break
+                                elif '提出论点' in fixed_title and any(kw in title_part for kw in ['直接提出', '对比引出', '现象带出']):
+                                    target_section = section
+                                    break
+                                elif '进行论证' in fixed_title and any(kw in title_part for kw in ['结构', '方法']):
+                                    target_section = section
+                                    break
+                                elif '得出结论' in fixed_title and any(kw in title_part for kw in ['具体结论', '结论评价']):
+                                    target_section = section
+                                    break
+                                elif '技术背景' in fixed_title and any(kw in title_part for kw in ['现存问题', '开发条件', '研究目的']):
+                                    target_section = section
+                                    break
+                                elif '介绍技术' in fixed_title and any(kw in title_part for kw in ['基本情况', '功用', '工作原理']):
+                                    target_section = section
+                                    break
+                                elif '技术评价' in fixed_title and any(kw in title_part for kw in ['好处', '局限性']):
+                                    target_section = section
+                                    break
+                                elif '发明前景' in fixed_title and any(kw in title_part for kw in ['市场前景', '应用前景']):
+                                    target_section = section
+                                    break
+                                elif '提出问题' in fixed_title and any(kw in title_part for kw in ['引出问题', '话题引入']):
+                                    target_section = section
+                                    break
+                                elif '解决措施' in fixed_title and any(kw in title_part for kw in ['措施目的', '具体做法', '案例']):
+                                    target_section = section
+                                    break
+                                elif '措施成效及评价' in fixed_title and any(kw in title_part for kw in ['措施成效', '措施评价', '后续措施']):
+                                    target_section = section
+                                    break
+                                elif '现在发展历程' in fixed_title and any(kw in title_part for kw in ['理解现在', '观点态度']):
+                                    target_section = section
+                                    break
+                                elif '过去发展历程' in fixed_title and any(kw in title_part for kw in ['理解原因', '观点态度']):
+                                    target_section = section
+                                    break
+                                elif '表达看法' in fixed_title and any(kw in title_part for kw in ['观点态度', '发展趋势']):
+                                    target_section = section
+                                    break
+                                elif '内容介绍' in fixed_title and any(kw in title_part for kw in ['基本情况', '章节内容']):
+                                    target_section = section
+                                    break
+                                elif '图书推荐' in fixed_title and any(kw in title_part for kw in ['写作目的']):
+                                    target_section = section
+                                    break
+                                elif '图书评价' in fixed_title and any(kw in title_part for kw in ['意义', '语言风格']):
+                                    target_section = section
+                                    break
+                                elif '发表观点' in fixed_title and any(kw in title_part for kw in ['深入讨论']):
+                                    target_section = section
+                                    break
+                                elif '归纳文章大意' in fixed_title and any(kw in title_part for kw in ['大意', '总结', '核心', '价值']):
+                                    target_section = section
+                                    break
+                                
+                                # 旧格式兼容
+                                elif any(keyword in title_part for keyword in ['起始', '开始', '初始']) and '起始' in fixed_title:
                                     target_section = section
                                     break
                                 elif any(keyword in title_part for keyword in ['步骤', '过程', '关键']) and '步骤' in fixed_title:
@@ -303,13 +457,8 @@ class XMindService:
                                     section['children'].append(item)
                                     break
         
-        # 确保每个一级节点至少有一些内容，如果为空则添加占位内容
-        for section in structure['children']:
-            if not section['children']:
-                section['children'].append({
-                    'title': 'Content will be analyzed here - 此处将分析相关内容',
-                    'children': []
-                })
+        # 如果节点为空，不添加占位内容，让前端处理
+        # 移除占位符逻辑，避免显示mock数据
         
         return structure
     

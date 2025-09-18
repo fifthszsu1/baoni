@@ -97,14 +97,53 @@ const articleStructure = computed(() => {
   
   const firstLevelTitles = props.data.children.map(child => child.title)
   
-  // 检测议论文结构
+  // 检测7种新文体结构
+  if (firstLevelTitles.some(title => title.includes('背景介绍') || title.includes('研究背景')) && 
+      firstLevelTitles.some(title => title.includes('研究过程'))) {
+    return { type: 'experimental-research', structure: 'research-report' }
+  }
+  
+  if (firstLevelTitles.some(title => title.includes('提出论点')) && 
+      firstLevelTitles.some(title => title.includes('进行论证')) &&
+      firstLevelTitles.some(title => title.includes('得出结论'))) {
+    return { type: 'theoretical-exposition', structure: 'argument-analysis' }
+  }
+  
+  if (firstLevelTitles.some(title => title.includes('技术背景')) && 
+      firstLevelTitles.some(title => title.includes('介绍技术')) &&
+      firstLevelTitles.some(title => title.includes('发明前景'))) {
+    return { type: 'technology-introduction', structure: 'tech-analysis' }
+  }
+  
+  if (firstLevelTitles.some(title => title.includes('引出现象')) && 
+      firstLevelTitles.some(title => title.includes('分析原因'))) {
+    return { type: 'social-phenomenon', structure: 'phenomenon-analysis' }
+  }
+  
+  if (firstLevelTitles.some(title => title.includes('提出问题')) && 
+      firstLevelTitles.some(title => title.includes('解决措施'))) {
+    return { type: 'problem-solution', structure: 'solution-analysis' }
+  }
+  
+  if (firstLevelTitles.some(title => title.includes('现在发展历程')) && 
+      firstLevelTitles.some(title => title.includes('过去发展历程'))) {
+    return { type: 'social-development', structure: 'development-analysis' }
+  }
+  
+  if (firstLevelTitles.some(title => title.includes('内容介绍')) && 
+      firstLevelTitles.some(title => title.includes('图书评价')) &&
+      firstLevelTitles.some(title => title.includes('发表观点'))) {
+    return { type: 'book-review', structure: 'review-analysis' }
+  }
+  
+  // 兼容旧格式 - 检测议论文结构
   if (firstLevelTitles.some(title => title.includes('论点')) && 
       firstLevelTitles.some(title => title.includes('论据')) && 
       firstLevelTitles.some(title => title.includes('总结'))) {
     return { type: 'argumentative', structure: 'argument' }
   }
   
-  // 检测说明文结构
+  // 兼容旧格式 - 检测说明文结构
   if (firstLevelTitles.some(title => title.includes('概念') || title.includes('标准') || title.includes('特点'))) {
     return { type: 'expository', structure: 'classification' }
   }
@@ -181,7 +220,24 @@ const getNodeClass = (index, total) => {
 }
 
 const getArticleTypeLabel = (structure) => {
-  if (structure.type === 'argumentative') {
+  // 新的7种文体类型
+  if (structure.type === 'experimental-research') {
+    return '实验研究与报告'
+  } else if (structure.type === 'theoretical-exposition') {
+    return '事理阐释类论说文'
+  } else if (structure.type === 'technology-introduction') {
+    return '新兴技术介绍'
+  } else if (structure.type === 'social-phenomenon') {
+    return '社会发展新现象类'
+  } else if (structure.type === 'problem-solution') {
+    return '问题解决类说明文'
+  } else if (structure.type === 'social-development') {
+    return '社会发展与变迁类'
+  } else if (structure.type === 'book-review') {
+    return '书评'
+  }
+  // 兼容旧格式
+  else if (structure.type === 'argumentative') {
     return '议论文结构'
   } else if (structure.type === 'expository') {
     const structureLabels = {
