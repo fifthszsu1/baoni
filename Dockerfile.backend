@@ -4,7 +4,10 @@ FROM python:3.9
 # 设置工作目录
 WORKDIR /app
 
-# 移除阿里云源配置，使用默认源避免版本冲突
+# 配置APT使用阿里云镜像源（适用于中国网络环境）
+RUN echo "deb https://mirrors.aliyun.com/debian/ bullseye main" > /etc/apt/sources.list && \
+    echo "deb https://mirrors.aliyun.com/debian/ bullseye-updates main" >> /etc/apt/sources.list && \
+    echo "deb https://mirrors.aliyun.com/debian-security/ bullseye-security main" >> /etc/apt/sources.list  
 
 # 安装系统依赖 - 最小化安装
 RUN apt-get update && apt-get install -y \
@@ -14,6 +17,8 @@ RUN apt-get update && apt-get install -y \
     # Tesseract OCR相关依赖
     tesseract-ocr \
     tesseract-ocr-eng \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制requirements文件
