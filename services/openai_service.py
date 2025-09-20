@@ -139,7 +139,7 @@ Please provide the extracted text directly without any additional commentary."""
 - **发明前景**：市场前景、应用前景
 - **归纳文章大意**：技术核心价值
 
-### 社会发展新现象类：
+### 现象类：
 - **引出现象**：开门见山、引用事例、前后对比
 - **说明现象普遍性**：举例说明、数据支撑、具体做法
 - **分析原因**：举例分析、原因说明

@@ -70,9 +70,15 @@
         </el-button>
       </el-button-group>
       
-      <el-button @click="downloadImage" type="primary" size="small">
-        <el-icon><Download /></el-icon>
-        导出图片
+      <el-button 
+        @click="downloadImage" 
+        type="primary" 
+        size="small" 
+        :loading="isExporting"
+        :disabled="isExporting"
+      >
+        <el-icon v-if="!isExporting"><Download /></el-icon>
+        {{ isExporting ? '导出中...' : '导出图片' }}
       </el-button>
     </div>
   </div>
@@ -81,6 +87,7 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
+import html2canvas from 'html2canvas'
 
 const props = defineProps({
   data: {
@@ -253,13 +260,72 @@ const getArticleTypeLabel = (structure) => {
   return '未知结构'
 }
 
+const isExporting = ref(false)
+
 const downloadImage = async () => {
+  if (isExporting.value) return
+  
   try {
-    // 这里可以实现截图功能，使用html2canvas库
-    ElMessage.info('图片导出功能开发中...')
+    isExporting.value = true
+    ElMessage.info('正在生成图片，请稍候...')
+    
+    // 获取思维导图容器元素
+    const mindmapContainer = document.querySelector('.mindmap-container')
+    if (!mindmapContainer) {
+      throw new Error('未找到思维导图容器')
+    }
+    
+    // 临时重置缩放以确保完整导出
+    const originalTransform = mindmapContainer.style.transform
+    mindmapContainer.style.transform = 'scale(1)'
+    
+    // 等待DOM更新完成
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 100)) // 额外等待确保样式应用
+    
+    // 使用html2canvas生成图片
+    const canvas = await html2canvas(mindmapContainer, {
+      backgroundColor: '#fafafa', // 设置背景色
+      scale: 2, // 提高图片清晰度（2倍分辨率）
+      useCORS: true, // 允许跨域图片
+      allowTaint: true,
+      width: mindmapContainer.scrollWidth,
+      height: mindmapContainer.scrollHeight,
+      scrollX: 0,
+      scrollY: 0,
+      // 确保捕获所有样式
+      ignoreElements: (element) => {
+        // 排除操作按钮区域
+        return element.classList.contains('mindmap-actions')
+      },
+      // 优化渲染选项
+      letterRendering: true,
+      logging: false,
+      imageTimeout: 15000,
+      removeContainer: true
+    })
+    
+    // 恢复原始缩放
+    mindmapContainer.style.transform = originalTransform
+    
+    // 创建下载链接
+    const link = document.createElement('a')
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
+    const filename = `思维导图_${(props.data.title || '文章分析').replace(/[<>:"/\\|?*]/g, '_')}_${timestamp}.png`
+    link.download = filename
+    link.href = canvas.toDataURL('image/png', 1.0)
+    
+    // 触发下载
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    ElMessage.success('图片导出成功！')
   } catch (error) {
     console.error('导出失败:', error)
-    ElMessage.error('导出失败')
+    ElMessage.error(`导出失败: ${error.message}`)
+  } finally {
+    isExporting.value = false
   }
 }
 

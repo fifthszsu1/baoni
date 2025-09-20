@@ -72,14 +72,4 @@ networks:
 
 volumes:
   mysql_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data/mysql
-  uploads-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./uploads 
+    driver: local 
