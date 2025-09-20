@@ -10,8 +10,10 @@ COPY dist/ /usr/share/nginx/html/
 # 复制nginx配置  
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# 安装curl用于健康检查
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# 改为（使用阿里云源）
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # 创建日志目录
 RUN mkdir -p /var/log/nginx
