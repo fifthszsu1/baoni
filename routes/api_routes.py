@@ -98,9 +98,8 @@ class TextAnalysis(Resource):
             
             # 初始化服务
             openai_service = OpenAIService()
-            xmind_service = XMindService()
             
-            # 调用OpenAI分析文本
+            # 调用OpenAI分析文本（现在直接返回mindmap_data）
             logger.info(f"Starting text analysis, length: {len(text)}")
             analysis_result = openai_service.analyze_text(text)
             
@@ -110,37 +109,15 @@ class TextAnalysis(Resource):
                     'error': f'Text analysis failed: {analysis_result["error"]}'
                 }, 500
             
-            # 生成思维导图结构数据
-            logger.info("Generating mindmap structure data")
-            logger.info(f"Analysis result length: {len(analysis_result.get('analysis', ''))}")
-            logger.info(f"Analysis result content: {analysis_result['analysis'][:500]}...")
+            logger.info("Analysis completed with mindmap data")
+            logger.info(f"Mindmap data: {analysis_result.get('mindmap_data', {})}")
             
-            try:
-                # 只解析结构，不生成文件
-                mindmap_data = xmind_service.parse_markdown_to_structure(
-                    analysis_result['analysis']
-                )
-                logger.info(f"Mindmap structure generated successfully")
-                
-            except Exception as e:
-                logger.error(f"Exception during mindmap structure generation: {str(e)}")
-                import traceback
-                logger.error(f"Full traceback: {traceback.format_exc()}")
-                return {
-                    'success': False,
-                    'analysis': analysis_result['analysis'],
-                    'error': f'Mindmap structure generation exception: {str(e)}'
-                }, 500
-            
-            # 返回成功结果
+            # 返回成功结果（mindmap_data已经在analyze_text中生成）
             return {
                 'success': True,
                 'analysis': analysis_result['analysis'],
-                'mindmap_data': mindmap_data,
-                'tokens_used': analysis_result.get('tokens_used', 0),
-                'debug_info': {
-                    'raw_analysis': analysis_result['analysis'][:500] + '...' if len(analysis_result['analysis']) > 500 else analysis_result['analysis']
-                }
+                'mindmap_data': analysis_result.get('mindmap_data', {}),
+                'tokens_used': analysis_result.get('tokens_used', 0)
             }, 200
             
         except Exception as e:
