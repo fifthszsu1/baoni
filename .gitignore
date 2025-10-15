@@ -97,5 +97,9 @@ yarn-error.log*
 # Docker
 .dockerignore
 
+# Dockerfile modifications (temporary ignore)
+frontend/Dockerfile
+Dockerfile.backend
+
 # Logs
 *.log 
