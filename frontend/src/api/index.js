@@ -88,6 +88,46 @@ export const api = {
     testConnection() {
       return axiosInstance.get('/api/analyze/test')
     }
+  },
+
+  // 聊天相关接口
+  chat: {
+    // 发送消息（普通模式）
+    sendMessage(message, conversationHistory = []) {
+      return axiosInstance.post('/api/chat/message', {
+        message,
+        conversation_history: conversationHistory
+      })
+    },
+
+    // 发送消息（流式模式）
+    async sendStreamMessage(message, conversationHistory = []) {
+      const token = localStorage.getItem('token')
+      const baseURL = process.env.VUE_APP_API_BASE_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5001' : '')
+      
+      const response = await fetch(`${baseURL}/api/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message,
+          conversation_history: conversationHistory
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return response
+    },
+
+    // 测试聊天连接
+    testChatConnection() {
+      return axiosInstance.get('/api/chat/test')
+    }
   }
 }
 

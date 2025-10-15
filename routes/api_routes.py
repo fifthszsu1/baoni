@@ -7,12 +7,14 @@ from services.openai_service import OpenAIService
 from services.xmind_service import XMindService
 from services.auth_service import AuthService, require_auth
 from services.ocr_service import OCRService
+from services.chat_service import ChatService
 
 logger = logging.getLogger(__name__)
 
 # 创建命名空间
 text_analysis_ns = Namespace('text_analysis', description='英文文本分析与XMind生成相关接口')
 auth_ns = Namespace('auth', description='用户认证相关接口')
+chat_ns = Namespace('chat', description='AI聊天相关接口')
 
 # API模型定义
 text_input_model = text_analysis_ns.model('TextInput', {
@@ -46,6 +48,22 @@ login_result_model = auth_ns.model('LoginResult', {
     'token': fields.String(description='JWT认证令牌'),
     'username': fields.String(description='用户名'),
     'message': fields.String(description='结果消息'),
+    'error': fields.String(description='错误信息')
+})
+
+# 聊天相关模型
+chat_message_model = chat_ns.model('ChatMessage', {
+    'message': fields.String(required=True, description='用户消息内容', example='你好，请介绍一下自己'),
+    'conversation_history': fields.List(fields.Raw, description='对话历史记录', example=[
+        {"role": "user", "content": "之前的用户消息"},
+        {"role": "assistant", "content": "之前的AI回复"}
+    ])
+})
+
+chat_response_model = chat_ns.model('ChatResponse', {
+    'success': fields.Boolean(description='聊天是否成功'),
+    'reply': fields.String(description='AI回复内容'),
+    'tokens_used': fields.Integer(description='使用的token数量'),
     'error': fields.String(description='错误信息')
 })
 
@@ -363,4 +381,203 @@ class ImageOCR(Resource):
                 'error': f'图片处理失败: {str(e)}',
                 'extracted_text': None,
                 'tokens_used': 0
+            }, 500
+
+# 聊天相关接口
+@chat_ns.route('/message')
+class ChatMessage(Resource):
+    """AI聊天接口"""
+    
+    @require_auth
+    @chat_ns.expect(chat_message_model)
+    @chat_ns.marshal_with(chat_response_model)
+    @chat_ns.doc(
+        'send_chat_message',
+        description='发送消息给AI助手，支持多轮对话',
+        responses={
+            200: '聊天成功',
+            400: '请求参数错误',
+            401: '未授权访问',
+            500: '服务器内部错误'
+        },
+        security='Bearer Auth'
+    )
+    def post(self):
+        """
+        发送消息给AI助手
+        
+        支持多轮对话，可以传入对话历史记录
+        """
+        try:
+            # 获取请求数据
+            data = request.get_json()
+            if not data or 'message' not in data:
+                return {
+                    'success': False,
+                    'error': '请提供消息内容',
+                    'reply': None,
+                    'tokens_used': 0
+                }, 400
+            
+            message = data['message'].strip()
+            if not message:
+                return {
+                    'success': False,
+                    'error': '消息内容不能为空',
+                    'reply': None,
+                    'tokens_used': 0
+                }, 400
+            
+            # 获取对话历史（可选）
+            conversation_history = data.get('conversation_history', [])
+            
+            # 初始化聊天服务
+            chat_service = ChatService()
+            
+            # 调用聊天服务
+            logger.info(f"处理聊天消息，长度: {len(message)}")
+            result = chat_service.chat_single(message, conversation_history)
+            
+            if result['success']:
+                logger.info("聊天处理成功")
+                return {
+                    'success': True,
+                    'reply': result['reply'],
+                    'tokens_used': result.get('tokens_used', 0),
+                    'error': None
+                }, 200
+            else:
+                logger.error(f"聊天处理失败: {result['error']}")
+                return {
+                    'success': False,
+                    'error': result['error'],
+                    'reply': None,
+                    'tokens_used': 0
+                }, 500
+                
+        except Exception as e:
+            logger.error(f"聊天API处理异常: {str(e)}")
+            return {
+                'success': False,
+                'error': f'聊天处理失败: {str(e)}',
+                'reply': None,
+                'tokens_used': 0
+            }, 500
+
+@chat_ns.route('/stream')
+class ChatStream(Resource):
+    """流式聊天接口"""
+    
+    @require_auth
+    @chat_ns.expect(chat_message_model)
+    @chat_ns.doc(
+        'send_chat_stream',
+        description='发送消息给AI助手，流式返回回复',
+        responses={
+            200: '流式聊天成功',
+            400: '请求参数错误',
+            401: '未授权访问',
+            500: '服务器内部错误'
+        },
+        security='Bearer Auth'
+    )
+    def post(self):
+        """
+        流式聊天接口
+        
+        发送消息给AI助手，以流式方式返回回复
+        """
+        try:
+            from flask import Response, stream_template_string
+            import json
+            
+            # 获取请求数据
+            data = request.get_json()
+            if not data or 'message' not in data:
+                return {
+                    'success': False,
+                    'error': '请提供消息内容'
+                }, 400
+            
+            message = data['message'].strip()
+            if not message:
+                return {
+                    'success': False,
+                    'error': '消息内容不能为空'
+                }, 400
+            
+            # 获取对话历史（可选）
+            conversation_history = data.get('conversation_history', [])
+            
+            # 构建消息列表
+            messages = []
+            if conversation_history:
+                messages.extend(conversation_history)
+            messages.append({"role": "user", "content": message})
+            
+            # 初始化聊天服务
+            chat_service = ChatService()
+            
+            def generate():
+                """生成器函数，用于流式输出"""
+                try:
+                    for chunk in chat_service.chat_stream(messages):
+                        # 返回SSE格式的数据
+                        yield f"data: {json.dumps({'content': chunk, 'done': False})}\n\n"
+                    
+                    # 发送结束标志
+                    yield f"data: {json.dumps({'content': '', 'done': True})}\n\n"
+                    
+                except Exception as e:
+                    logger.error(f"流式聊天异常: {str(e)}")
+                    yield f"data: {json.dumps({'error': str(e), 'done': True})}\n\n"
+            
+            # 返回流式响应
+            return Response(
+                generate(),
+                mimetype='text/event-stream',
+                headers={
+                    'Cache-Control': 'no-cache',
+                    'Connection': 'keep-alive',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"流式聊天API处理异常: {str(e)}")
+            return {
+                'success': False,
+                'error': f'流式聊天处理失败: {str(e)}'
+            }, 500
+
+@chat_ns.route('/test')
+class ChatTest(Resource):
+    """聊天服务测试接口"""
+    
+    @chat_ns.doc('test_chat_connection', description='测试聊天服务连接')
+    def get(self):
+        """测试聊天服务连接"""
+        try:
+            chat_service = ChatService()
+            result = chat_service.test_chat_connection()
+            
+            if result['success']:
+                return {
+                    'success': True,
+                    'message': result['message'],
+                    'reply': result['reply'],
+                    'model': result['model'],
+                    'timestamp': str(datetime.now())
+                }, 200
+            else:
+                return {
+                    'success': False,
+                    'error': result['error']
+                }, 500
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
             }, 500 

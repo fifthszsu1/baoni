@@ -5,6 +5,10 @@
         <h1>英文文本分析系统</h1>
       </div>
       <div class="header-right">
+        <el-button @click="goToChat" type="success" plain>
+          <el-icon><ChatDotRound /></el-icon>
+          AI助手
+        </el-button>
         <el-dropdown @command="handleCommand">
           <span class="user-info">
             <el-icon><User /></el-icon>
@@ -192,7 +196,7 @@ import { api } from '@/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Search, Delete, User, ArrowDown, SwitchButton, 
-  UploadFilled, Camera 
+  UploadFilled, Camera, ChatDotRound 
 } from '@element-plus/icons-vue'
 import MindmapViewer from '@/components/MindmapViewer.vue'
 import XMindViewer from '@/components/XMindViewer.vue'
@@ -392,6 +396,10 @@ const handleCommand = async (command) => {
   }
 }
 
+const goToChat = () => {
+  router.push('/chat')
+}
+
 const formatMarkdown = (text) => {
   if (!text) return ''
   
@@ -442,6 +450,12 @@ onMounted(() => {
   cursor: pointer;
   color: #606266;
   font-size: 14px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
 .header-right .user-info:hover {
