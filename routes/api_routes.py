@@ -8,6 +8,7 @@ from services.xmind_service import XMindService
 from services.auth_service import AuthService, require_auth
 from services.ocr_service import OCRService
 from services.chat_service import ChatService
+from services.health_check_service import HealthCheckService
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 text_analysis_ns = Namespace('text_analysis', description='英文文本分析与XMind生成相关接口')
 auth_ns = Namespace('auth', description='用户认证相关接口')
 chat_ns = Namespace('chat', description='AI聊天相关接口')
+health_ns = Namespace('health', description='系统健康检查相关接口')
 
 # API模型定义
 text_input_model = text_analysis_ns.model('TextInput', {
@@ -64,6 +66,24 @@ chat_response_model = chat_ns.model('ChatResponse', {
     'success': fields.Boolean(description='聊天是否成功'),
     'reply': fields.String(description='AI回复内容'),
     'tokens_used': fields.Integer(description='使用的token数量'),
+    'error': fields.String(description='错误信息')
+})
+
+# 健康检查相关模型
+health_status_model = health_ns.model('HealthStatus', {
+    'success': fields.Boolean(description='检查是否成功'),
+    'status': fields.String(description='健康状态', example='healthy'),
+    'message': fields.String(description='状态描述'),
+    'healthy_count': fields.Integer(description='健康端点数量'),
+    'total_count': fields.Integer(description='总端点数量'),
+    'health_ratio': fields.Float(description='健康比例'),
+    'timestamp': fields.String(description='检查时间'),
+    'error': fields.String(description='错误信息')
+})
+
+health_report_model = health_ns.model('HealthReport', {
+    'success': fields.Boolean(description='检查是否成功'),
+    'health_report': fields.Raw(description='详细健康报告'),
     'error': fields.String(description='错误信息')
 })
 
@@ -580,4 +600,96 @@ class ChatTest(Resource):
             return {
                 'success': False,
                 'error': str(e)
+            }, 500
+
+# 健康检查相关接口
+@health_ns.route('/check')
+class HealthCheck(Resource):
+    """完整健康检查接口"""
+    
+    @health_ns.marshal_with(health_report_model)
+    @health_ns.doc(
+        'comprehensive_health_check',
+        description='执行完整的系统健康检查，检查所有配置的外部服务端点',
+        responses={
+            200: '健康检查完成',
+            500: '健康检查服务异常'
+        }
+    )
+    def get(self):
+        """
+        执行完整的健康检查
+        
+        检查所有配置的外部服务端点，返回详细的健康报告
+        包括每个域名和端点的状态、响应时间等信息
+        """
+        try:
+            logger.info("收到完整健康检查请求")
+            
+            # 初始化健康检查服务
+            health_service = HealthCheckService(timeout=30)
+            
+            # 执行健康检查
+            result = health_service.perform_health_check()
+            
+            if result['success']:
+                logger.info("完整健康检查完成")
+                return result, 200
+            else:
+                logger.error("健康检查失败")
+                return {
+                    'success': False,
+                    'error': '健康检查执行失败'
+                }, 500
+                
+        except Exception as e:
+            logger.error(f"健康检查API异常: {str(e)}")
+            return {
+                'success': False,
+                'error': f'健康检查服务异常: {str(e)}'
+            }, 500
+
+@health_ns.route('/status')
+class HealthStatus(Resource):
+    """快速健康状态接口"""
+    
+    @health_ns.marshal_with(health_status_model)
+    @health_ns.doc(
+        'quick_health_status',
+        description='获取快速健康状态，仅检查关键服务端点',
+        responses={
+            200: '状态检查完成',
+            500: '状态检查服务异常'
+        }
+    )
+    def get(self):
+        """
+        获取快速健康状态
+        
+        仅检查关键服务端点，快速返回系统整体健康状况
+        适用于监控和快速状态查询
+        """
+        try:
+            logger.info("收到快速健康状态请求")
+            
+            # 初始化健康检查服务
+            health_service = HealthCheckService(timeout=30)
+            
+            # 执行快速状态检查
+            result = health_service.get_quick_status()
+            
+            if result['success']:
+                logger.info(f"快速健康状态检查完成: {result['status']}")
+                return result, 200
+            else:
+                logger.error(f"快速健康状态检查失败: {result.get('error', 'Unknown error')}")
+                return result, 500
+                
+        except Exception as e:
+            logger.error(f"健康状态API异常: {str(e)}")
+            return {
+                'success': False,
+                'error': f'健康状态服务异常: {str(e)}',
+                'status': 'error',
+                'message': '健康检查服务异常'
             }, 500 
